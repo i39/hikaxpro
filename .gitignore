@@ -1,0 +1,15 @@
+*.test
+*.out
+access.log
+var/
+dist/
+tmp/
+docker-compose-private.yml
+hikhello/.vscode
+.idea
+*.gpg
+*.bak
+*.log
+.env
+*.a
+.vscode
