@@ -1,4 +1,3 @@
-```markdown
 # HikHello Project
 
 ## Overview
