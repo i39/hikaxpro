@@ -1,0 +1,21 @@
+{
+  "manufacturer": "Hikvision",
+  "model": "AX Pro",
+  "services": [
+    {
+      "name": "Температура",
+      "type": "TemperatureSensor",
+      "characteristics": [
+        {
+          "type": "CurrentTemperature",
+          "link": {
+            "type": "Integer",
+            "topicSearch": "hikax_devices/(.*)/(.*)/temperature",
+            "topicGet": "hikax_devices/(1)/(2)/temperature"
+          },
+          "minStep": 1
+        }
+      ]
+    }
+  ]
+}

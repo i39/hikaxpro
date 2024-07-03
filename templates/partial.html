@@ -1,0 +1,22 @@
+<table role="grid">
+    <thead>
+    <tr>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Signal</th>
+        <th>Temperature</th>
+        <th>Battery</th>
+    </tr>
+    </thead>
+    <tbody>
+    {{range .}}
+    <tr>
+        <td>{{.ID}}</td>
+        <td>{{.Name}}</td>
+        <td>{{.Signal}}</td>
+        <td>{{.Temperature}}</td>
+        <td>{{.ChargeValue}}</td>
+    </tr>
+    {{end}}
+    </tbody>
+</table>

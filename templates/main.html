@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Device Status</title>
+    <script src="https://unpkg.com/htmx.org@1.8.4"></script>
+    <link href="https://unpkg.com/@picocss/pico@latest/css/pico.min.css" rel="stylesheet">
+</head>
+<body>
+<main class="container">
+    <h1>Device Status</h1>
+    <div id="zones-table" hx-get="/zones" hx-trigger="load, refresh"></div>
+</main>
+<script>
+    const eventSource = new EventSource('/events');
+    eventSource.onmessage = function(event) {
+        htmx.trigger(htmx.find('#zones-table'), 'refresh');
+    };
+</script>
+</body>
+</html>
+
+
