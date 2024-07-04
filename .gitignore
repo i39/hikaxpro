@@ -14,3 +14,4 @@ hikhello/.vscode
 *.a
 .vscode
 hikaxpro
+.DS_Store
