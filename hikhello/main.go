@@ -1,3 +1,20 @@
+// This is a Go program that fetches data from a Hikvision AX device and publishes it to an MQTT broker and an HTTP endpoint.
+
+// The program uses the following main components:
+
+// 1. Fetching data: The `fetchData` function periodically fetches data from the Hikvision AX device and stores it in the `deviceInfoList` slice.
+// 2. HTTP poller: The `httpPoller` function listens for HTTP requests and responds with the latest device data.
+// 3. MQTT poller: The `mqttPoller` function publishes the latest device data to an MQTT broker.
+
+// The program is configured using command-line flags and environment variables, which are defined in the `opts` struct. The main steps are:
+
+// 1. Parse the command-line flags and environment variables.
+// 2. Set up the logging configuration based on the `Dbg` flag.
+// 3. Set the polling time based on the `PollingTime` option.
+// 4. Set the HIKAX authentication details based on the provided options.
+// 5. Start the data fetching goroutine.
+// 6. Start the HTTP and MQTT poller goroutines.
+// 7. Wait for the goroutines to finish (although the program is designed to run indefinitely).
 package main
 
 import (
@@ -26,7 +43,16 @@ var opts struct {
 
 	PollingTime uint `long:"polling-time" env:"POLLING_TIME" description:"polling time in seconds" default:"10"`
 
-	Dbg bool `long:"dbg" env:"DEBUG" description:"debug mode"`
+	Dbg  bool `long:"dbg" env:"DEBUG" description:"debug mode"`
+	MQTT struct {
+		Host        string `long:"host" env:"MQTT_HOST" description:"host of the MQTT broker" required:"true"`
+		Port        string `long:"port" env:"MQTT_PORT" description:"port of the MQTT broker" default:"1883"`
+		Username    string `long:"username" env:"MQTT_USERNAME" description:"username to access the MQTT broker" required:"true"`
+		Password    string `long:"password" env:"MQTT_PASSWORD" description:"password to access the MQTT broker" required:"true"`
+		Topic       string `long:"topic" env:"MQTT_TOPIC" description:"topic to publish the data" required:"true"`
+		KeepAlive   int    `long:"keep-alive" env:"MQTT_KEEP_ALIVE" description:"keep alive time in seconds" default:"60"`
+		PingTimeout int    `long:"ping-timeout" env:"MQTT_PING_TIMEOUT" description:"ping timeout in seconds" default:"30"`
+	} `group:"mqtt" namespace:"mqtt" env-namespace:"MQTT"`
 }
 
 type DeviceInfo struct {
@@ -44,6 +70,15 @@ type HIKAXAuth struct {
 	Login string
 	Pass  string
 }
+type MQTTConfig struct {
+	Host        string
+	Port        string
+	Login       string
+	Pass        string
+	Topic       string
+	KeepAlive   time.Duration
+	PingTimeout time.Duration
+}
 
 var deviceInfoList []DeviceInfo
 var mu sync.Mutex
@@ -54,6 +89,7 @@ var dataChangedToMQTT = make(chan bool)
 var wg = sync.WaitGroup{}
 var pollingTime time.Duration
 var hikAXAuth HIKAXAuth
+var mqttConfig MQTTConfig
 
 func fetchData() {
 	for {
@@ -140,6 +176,8 @@ func main() {
 	pollingTime = setPollingTime(opts.PollingTime)
 	err := error(nil)
 	hikAXAuth, err = setHIKAXAuth()
+	mqttConfig, err = setMQTTConfig()
+
 	if err != nil {
 		log.Fatalf("[ERROR] %v", err)
 	}
@@ -171,7 +209,7 @@ func run() error {
 	}
 	go func() {
 		log.Print("[INFO] Starting MQTT poller")
-		err = mqttPoller()
+		err = mqttPoller(mqttConfig)
 		if err != nil {
 			log.Printf("[ERROR] %v", err)
 			return
@@ -211,6 +249,33 @@ func setPollingTime(ptime uint) time.Duration {
 		return time.Duration(ptime) * time.Second
 	}
 	return 10 * time.Second
+}
+
+func setMQTTConfig() (MQTTConfig, error) {
+	mqttConfig := MQTTConfig{}
+	if opts.MQTT.Host == "" || opts.MQTT.Username == "" || opts.MQTT.Password == "" || opts.MQTT.Topic == "" {
+		return MQTTConfig{}, fmt.Errorf("[ERROR] MQTT host, username, password and topic are required")
+	}
+	if opts.MQTT.Port == "" {
+		mqttConfig.Port = "1883"
+	}
+	if opts.MQTT.KeepAlive == 0 {
+		mqttConfig.KeepAlive = 60
+	} else {
+		mqttConfig.KeepAlive = time.Duration(opts.MQTT.KeepAlive) * time.Second
+	}
+
+	if opts.MQTT.PingTimeout == 0 {
+		mqttConfig.PingTimeout = 30
+	} else {
+		mqttConfig.PingTimeout = time.Duration(opts.MQTT.PingTimeout) * time.Second
+	}
+
+	mqttConfig.Host = opts.MQTT.Host
+	mqttConfig.Login = opts.MQTT.Username
+	mqttConfig.Pass = opts.MQTT.Password
+	mqttConfig.Topic = opts.MQTT.Topic
+	return mqttConfig, nil
 }
 
 func setHIKAXAuth() (HIKAXAuth, error) {

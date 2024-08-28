@@ -16,7 +16,7 @@ COPY ./templates ./templates
 RUN go mod download
 
 # Build the Go app
-RUN CGO_ENABLED=0 GOOS=linux go build -o main  ./hikhello/  
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o main  ./hikhello/
 
 # Start a new stage from scratch
 FROM scratch
