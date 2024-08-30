@@ -15,6 +15,7 @@
 // 5. Start the data fetching goroutine.
 // 6. Start the HTTP and MQTT poller goroutines.
 // 7. Wait for the goroutines to finish (although the program is designed to run indefinitely).
+
 package main
 
 import (
@@ -195,32 +196,27 @@ func run() error {
 	go fetchData()
 	err := error(nil)
 	// Start the HTTP polling goroutine
-	wg.Add(2)
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		log.Printf("[INFO] Starting HTTP poller on %s", listenAddress(opts.HttpListen))
 		err = httpPoller()
-		if err != nil {
-			log.Printf("[ERROR] %v", err)
-			return
-		}
 	}()
-	if err != nil {
-		return err
-	}
+
+	wg.Add(1)
 	go func() {
-		log.Print("[INFO] Starting MQTT poller")
+		defer wg.Done()
+		log.Print("[INFO] Starting MQTT poller on " + mqttConfig.Host + ":" + mqttConfig.Port)
 		err = mqttPoller(mqttConfig)
-		if err != nil {
-			log.Printf("[ERROR] %v", err)
-			return
-		}
 	}()
+
+	wg.Wait()
+
 	if err != nil {
 		return err
 	}
-	wg.Wait()
-	// Prevent the main function from exiting immediately
-	select {} // Block forever
+	log.Printf("[INFO] All pollers have finished")
+	return nil
 
 }
 
@@ -258,7 +254,10 @@ func setMQTTConfig() (MQTTConfig, error) {
 	}
 	if opts.MQTT.Port == "" {
 		mqttConfig.Port = "1883"
+	} else {
+		mqttConfig.Port = opts.MQTT.Port
 	}
+
 	if opts.MQTT.KeepAlive == 0 {
 		mqttConfig.KeepAlive = 60
 	} else {
@@ -275,6 +274,7 @@ func setMQTTConfig() (MQTTConfig, error) {
 	mqttConfig.Login = opts.MQTT.Username
 	mqttConfig.Pass = opts.MQTT.Password
 	mqttConfig.Topic = opts.MQTT.Topic
+	mqttConfig.Port = opts.MQTT.Port
 	return mqttConfig, nil
 }
 
@@ -285,6 +285,8 @@ func setHIKAXAuth() (HIKAXAuth, error) {
 	}
 	if opts.HIKAX.Port == "" {
 		hikAuth.Port = "80"
+	} else {
+		hikAuth.Port = opts.HIKAX.Port
 	}
 	hikAuth.Host = opts.HIKAX.Host
 	hikAuth.Login = opts.HIKAX.Username

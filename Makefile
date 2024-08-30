@@ -16,7 +16,7 @@ build-binary-linux:
 
 # Build Docker image
 .PHONY: build-docker
-build-docker: build-binary-linux
+build-docker:
 	docker build -t $(DOCKER_IMAGE_NAME):$(DOCKER_TAG) .
 
 # Clean up

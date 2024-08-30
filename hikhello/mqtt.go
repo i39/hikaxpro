@@ -31,7 +31,8 @@ func mqttPoller(config MQTTConfig) error {
 	// Create and start an MQTT client
 	client := mqtt.NewClient(opts)
 	if token := client.Connect(); token.Wait() && token.Error() != nil {
-		panic(token.Error())
+		//panic(token.Error())
+		return token.Error()
 	}
 	for {
 		select {
