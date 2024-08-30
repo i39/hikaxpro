@@ -203,6 +203,7 @@ func run() error {
 		err = httpPoller()
 	}()
 
+	// Start the MQTT polling goroutine
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -252,22 +253,19 @@ func setMQTTConfig() (MQTTConfig, error) {
 	if opts.MQTT.Host == "" || opts.MQTT.Username == "" || opts.MQTT.Password == "" || opts.MQTT.Topic == "" {
 		return MQTTConfig{}, fmt.Errorf("[ERROR] MQTT host, username, password and topic are required")
 	}
-	if opts.MQTT.Port == "" {
+	mqttConfig.Port = opts.MQTT.Port
+	if mqttConfig.Port == "" {
 		mqttConfig.Port = "1883"
-	} else {
-		mqttConfig.Port = opts.MQTT.Port
 	}
 
-	if opts.MQTT.KeepAlive == 0 {
-		mqttConfig.KeepAlive = 60
-	} else {
-		mqttConfig.KeepAlive = time.Duration(opts.MQTT.KeepAlive) * time.Second
+	mqttConfig.KeepAlive = time.Duration(opts.MQTT.KeepAlive) * time.Second
+	if mqttConfig.KeepAlive == 0 {
+		mqttConfig.KeepAlive = 60 * time.Second
 	}
 
-	if opts.MQTT.PingTimeout == 0 {
-		mqttConfig.PingTimeout = 30
-	} else {
-		mqttConfig.PingTimeout = time.Duration(opts.MQTT.PingTimeout) * time.Second
+	mqttConfig.PingTimeout = time.Duration(opts.MQTT.PingTimeout) * time.Second
+	if mqttConfig.PingTimeout == 0 {
+		mqttConfig.PingTimeout = 30 * time.Second
 	}
 
 	mqttConfig.Host = opts.MQTT.Host
@@ -283,10 +281,9 @@ func setHIKAXAuth() (HIKAXAuth, error) {
 	if opts.HIKAX.Host == "" || opts.HIKAX.Username == "" || opts.HIKAX.Password == "" {
 		return HIKAXAuth{}, fmt.Errorf("[ERROR] HIKAX host, username and password are required")
 	}
-	if opts.HIKAX.Port == "" {
+	hikAuth.Port = opts.HIKAX.Port
+	if hikAuth.Port == "" {
 		hikAuth.Port = "80"
-	} else {
-		hikAuth.Port = opts.HIKAX.Port
 	}
 	hikAuth.Host = opts.HIKAX.Host
 	hikAuth.Login = opts.HIKAX.Username
