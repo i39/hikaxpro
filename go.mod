@@ -2,7 +2,7 @@ module github.com/i39/hikhello
 
 go 1.23.2
 
-replace github.com/i39/hikhello/hikaxprogo => ./hikaxprogo
+replace github.com/i39/hikaxprogo => ./hikaxprogo
 
 require (
 	github.com/eclipse/paho.mqtt.golang v1.5.0
